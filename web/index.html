@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>相册索引</title>
+<link rel="stylesheet" href="style.css?v=20261027h">
+</head>
+<body>
+<header class="topbar">
+  <button type="button" id="navBack" class="nav-back" title="返回上一页" hidden>‹ 返回</button>
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>相册索引</div>
+  <form id="searchForm" class="search-form">
+    <div class="search-field">
+      <span class="search-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.4"/><path d="M15.6 15.6l4.2 4.2"/></svg>
+      </span>
+      <input id="searchInput" type="search" placeholder="搜索时间、文件名、图中文字或画面，如：2025年3月21日、合同、海边日落" spellcheck="false" autocomplete="off">
+    </div>
+    <button type="submit">搜索</button>
+  </form>
+  <div id="statusBar" class="status-bar">未开始</div>
+</header>
+
+<div class="shell">
+  <div class="pages" id="pagesWrap">
+    <section id="pagePhotos" class="page">
+      <div id="levelGrid" class="level-grid" hidden></div>
+      <main id="timeline" class="timeline">
+        <div id="otdBanner" class="otd-banner" hidden></div>
+        <div id="empty" class="empty">
+          <p>还没有索引任何图片。</p>
+          <p class="hint">Windows「图片」「桌面」「下载」「文档」里的图片会自动索引；放进「图片」文件夹的新图也会被自动收进来。</p>
+        </div>
+      </main>
+    </section>
+
+    <section id="pageAlbums" class="page" hidden>
+      <div class="pg-inner">
+        <h3 class="pg-h">性质</h3>
+        <div id="smartGrid" class="album-grid"></div>
+        <h3 class="pg-h">来源</h3>
+        <div id="folderGrid" class="album-grid"></div>
+        <h3 class="pg-h">主题</h3>
+        <div id="sceneGrid" class="album-grid"></div>
+        <h3 class="pg-h">动图</h3>
+        <div id="gifGrid" class="album-grid"></div>
+        <h3 class="pg-h">我的图集</h3>
+        <div id="userAlbumGrid" class="album-grid"></div>
+      </div>
+    </section>
+
+    <section id="searchResults" class="search-results" hidden>
+      <div class="results-head">
+        <span id="resultsCount"></span>
+      </div>
+      <div id="resultsGrid" class="results-grid"></div>
+    </section>
+    <section id="dupsResults" class="search-results" hidden>
+      <div class="results-head">
+        <span id="dupsSummary"></span>
+        <button type="button" id="dupsBack" class="ghost">返回</button>
+      </div>
+      <div id="dupsGrid"></div>
+    </section>
+
+    <div id="selectBar" class="select-bar" hidden>
+      <span id="selCount">已选 0 张</span>
+      <button type="button" id="selAll">全选</button>
+      <button type="button" id="selClass">类选…</button>
+      <button type="button" id="selAddAlbum">加入图集…</button>
+      <button type="button" id="selTrash">删除</button>
+      <button type="button" id="selMove">移动…</button>
+      <button type="button" id="selShare">分享…</button>
+      <button type="button" id="selExit">返回</button>
+    </div>
+  </div>
+
+<dialog id="albumPickDialog" class="organize-dialog ap-dialog">
+  <h3 id="apTitle">加入图集</h3>
+  <p class="od-hint">点图集卡片加入（显示勾选态），再点一次移出；也可以在下面填名称新建图集。</p>
+  <div id="apList" class="ap-list ap-grid"></div>
+  <label class="od-row">新建并加入
+    <input id="apNewName" type="text" placeholder="填写新图集名称，点「完成」新建" spellcheck="false">
+  </label>
+  <menu>
+    <button type="button" id="apClose" class="ghost">返回</button>
+    <button type="button" id="apDone" class="primary">完成</button>
+  </menu>
+</dialog>
+
+<dialog id="albumMenuDialog" class="organize-dialog">
+  <h3 id="amName">图集</h3>
+  <menu class="menu-col">
+    <button type="button" id="amRename">重命名…</button>
+    <button type="button" id="amDelete" class="danger">删除图集（不动照片）</button>
+    <button type="button" id="amClose" class="ghost">取消</button>
+  </menu>
+</dialog>
+
+  <aside id="detailDialog" class="detail-pane" hidden>
+    <div id="paneResizer" class="pane-resizer" title="按住左右拖动可调整预览栏宽度"></div>
+    <div class="dd-head">
+      <h3>预览</h3>
+      <button type="button" id="ddClose" class="ghost">关闭</button>
+    </div>
+    <div class="dd-media">
+      <img id="ddImage" alt="">
+      <video id="ddVideo" controls preload="metadata" hidden></video>
+      <div id="ddBroken" class="dd-broken" hidden>无法读取原图</div>
+      <a id="ddOpenSrc" class="dd-src" hidden target="_blank" rel="noopener">用系统播放器打开原文件</a>
+    </div>
+    <div class="dd-info">
+      <dl id="ddMeta"></dl>
+      <section id="ddOcr" hidden>
+        <h4>图中文字（OCR）</h4>
+        <p id="ddOcrText"></p>
+      </section>
+      <section id="ddDups" hidden>
+        <h4>近似重复</h4>
+        <p id="ddDupsText"></p>
+      </section>
+      <div class="dd-row">
+        <button type="button" id="ddSimilar">找相似（语义）</button>
+        <span id="ddSimilarState"></span>
+      </div>
+      <section id="ddSimilarBox" hidden>
+        <h4>相似图片</h4>
+        <div id="ddSimilarGrid" class="sim-grid"></div>
+      </section>
+      <div class="dd-row">
+        <button type="button" id="ddAlbum">加入图集…</button>
+        <span id="ddAlbumState"></span>
+      </div>
+      <label class="dd-note">备注
+        <textarea id="ddNote" rows="3" placeholder="给这张图写点备注…（只存进索引数据库，不改动文件）" spellcheck="false"></textarea>
+      </label>
+      <div class="dd-actions">
+        <span id="ddSaveState"></span>
+        <button type="button" id="ddSave" class="primary">保存备注</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="seg-bar" id="photoSeg">
+  <button type="button" data-level="year">年</button>
+  <button type="button" data-level="month">月</button>
+  <button type="button" data-level="day">日</button>
+  <button type="button" data-level="mine" class="on">我的照片</button>
+</div>
+
+<nav id="tabbar" class="tabbar">
+  <button type="button" data-tab="photos" class="on">
+    <svg class="tb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="8.4" cy="9.9" r="1.5"/><path d="M4.2 17.2l5-4.6 3.9 3.3 3-2.6 3.9 3.7"/></svg>
+    <span>照片</span>
+  </button>
+  <button type="button" data-tab="albums">
+    <svg class="tb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7.2" width="13" height="12.8" rx="2.6"/><path d="M7.6 4.2h9.8a3 3 0 0 1 3 3v8.4"/></svg>
+    <span>图集</span>
+  </button>
+</nav>
+<dialog id="classPickDialog" class="organize-dialog">
+  <h3>按类别选择</h3>
+  <p class="od-hint">类别可多选：点一次选中（显示占用态），再点一次取消。选好后点「返回」回到操作栏。</p>
+  <div class="cp-tabs" id="cpTabs">
+    <button type="button" data-dim="time" class="on">时间轴</button>
+    <button type="button" data-dim="kind">种类</button>
+    <button type="button" data-dim="source">来源</button>
+    <button type="button" data-dim="scene">主题</button>
+  </div>
+  <div id="cpList" class="ap-list"></div>
+  <div id="cpState" class="cd-state"></div>
+  <menu>
+    <button type="button" id="cpClear" class="ghost">取消选择</button>
+    <button type="button" id="cpClose" class="ghost">返回</button>
+  </menu>
+</dialog>
+
+<dialog id="folderPickDialog" class="organize-dialog fp-dialog">
+  <div class="fp-titlebar">
+    <span>移动到文件夹</span>
+    <button type="button" id="fpCloseX" class="fp-x" title="关闭">✕</button>
+  </div>
+  <div class="fp-toolbar">
+    <button type="button" id="fpUp" class="fp-nav" title="上一级">↑</button>
+    <button type="button" id="fpHome" class="fp-nav" title="默认文件夹「图片」">⌂</button>
+    <span id="fpCur" class="fp-addr"></span>
+  </div>
+  <div class="fp-body">
+    <aside class="fp-side">
+      <h4>快速访问</h4>
+      <div id="fpQuick" class="fp-quick"></div>
+      <p class="fp-note">单击文件夹＝选中为目标，双击＝进入该文件夹。任何图片都可以移动到任意文件夹。</p>
+    </aside>
+    <div id="fpList" class="fp-list"></div>
+  </div>
+  <div class="fp-status">
+    <span id="fpState"></span>
+    <span id="fpSelInfo"></span>
+  </div>
+  <menu>
+    <button type="button" id="fpCancel" class="ghost">取消</button>
+    <button type="button" id="fpOk" class="primary">移动到这里</button>
+  </menu>
+</dialog>
+
+<dialog id="shareDialog" class="organize-dialog fp-dialog">
+  <div class="fp-titlebar">
+    <span>分享图片包 · 选择导出位置</span>
+    <button type="button" id="shareClose" class="fp-x" title="关闭">✕</button>
+  </div>
+  <p class="od-hint">zip 里只有原图，解压后点选图片即可在资源管理器预览栏查看。选好导出文件夹后，再点「确认生成」。</p>
+  <div class="fp-toolbar">
+    <button type="button" id="shUp" class="fp-nav" title="上一级">↑</button>
+    <button type="button" id="shHome" class="fp-nav" title="默认文件夹「图片」">⌂</button>
+    <span id="shCur" class="fp-addr"></span>
+  </div>
+  <div class="fp-body">
+    <aside class="fp-side">
+      <h4>快速访问</h4>
+      <div id="shQuick" class="fp-quick"></div>
+      <p class="fp-note">单击文件夹＝选中导出位置，双击＝进入该文件夹。</p>
+    </aside>
+    <div id="shList" class="fp-list share-list"></div>
+  </div>
+  <p id="shareResult" class="od-preview"></p>
+  <menu>
+    <button type="button" id="shCancel" class="ghost">取消</button>
+    <button type="button" id="shOk" class="primary">确认生成</button>
+  </menu>
+</dialog>
+<dialog id="modelDialog" class="organize-dialog">
+  <h3>安装本地语义模型</h3>
+  <p class="od-hint">语义检索（按描述找图）和智能场景需要本地中文 CLIP 模型（约 190MB）。模型只下载到本机并离线运行，照片不会上传；装好后可一直使用，不再询问。</p>
+  <div id="modelState" class="od-progress">准备中…</div>
+  <div id="modelBar" class="od-bar" hidden><div id="modelBarFill"></div></div>
+  <menu>
+    <button type="button" id="modelCancel" class="ghost">以后再说</button>
+    <button type="button" id="modelOk" class="primary">开始安装</button>
+  </menu>
+</dialog>
+<script src="app.js?v=20261027h"></script>
+</body>
+</html>

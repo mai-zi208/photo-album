@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pillow
+pillow-heif
+blake3
+httpx
+rapidocr
+onnxruntime
+transformers
+numpy
+send2trash
+watchdog
+opencv-python-headless<5  # Haar cascade XMLs ship in the wheel; 5.0 dropped CascadeClassifier
+pywebview  # 桌面窗口（Windows 走 Edge WebView2）

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# 本地数据与构建产物（含个人照片索引、缩略图、模型、打包输出）
+.data/
+.bench/
+dist/
+build/
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# 临时文件
+.tmp*
+*.part
+
+# 系统
+Thumbs.db
+Desktop.ini
+.DS_Store

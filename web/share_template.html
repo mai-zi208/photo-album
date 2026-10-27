@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITLE__</title>
+<style>
+:root{--bg:#1c1c1e;--card:#2a2a2e;--text:#e8e8ea;--muted:#9a9aa0;--accent:#4c8dff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI","Microsoft YaHei",sans-serif}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding:14px 22px;background:rgba(28,28,30,.94);border-bottom:1px solid #333;backdrop-filter:blur(8px)}
+header h1{font-size:17px;font-weight:600}
+.meta{color:var(--muted);font-size:12px}
+.privacy{margin-left:auto;color:var(--muted);font-size:11px;border:1px solid #3a3a3f;border-radius:20px;padding:3px 10px}
+main{padding:8px 22px 80px;max-width:1400px;margin:0 auto}
+.day{margin-top:22px}
+.day h2{font-size:13px;font-weight:600;color:var(--muted);position:sticky;top:60px;z-index:5;
+  background:var(--bg);padding:6px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+figure{position:relative;background:var(--card);border-radius:8px;overflow:hidden;cursor:zoom-in;aspect-ratio:1}
+figure img{width:100%;height:100%;object-fit:cover;display:block}
+figure .tag{position:absolute;left:6px;bottom:6px;font-size:10px;color:#fff;
+  background:rgba(0,0,0,.55);border-radius:3px;padding:1px 6px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;z-index:100;
+  align-items:center;justify-content:center;flex-direction:column}
+.lb.on{display:flex}
+.lb img{max-width:92vw;max-height:82vh;object-fit:contain;border-radius:6px}
+.lb .cap{color:var(--muted);font-size:13px;margin-top:12px}
+.lb .nav{position:absolute;top:50%;transform:translateY(-50%);font-size:40px;color:#fff;
+  background:rgba(255,255,255,.08);border:0;border-radius:8px;width:56px;height:80px;cursor:pointer}
+.lb .nav:hover{background:rgba(255,255,255,.18)}
+.lb .prev{left:14px}.lb .next{right:14px}
+.lb .x{position:absolute;top:18px;right:22px;font-size:30px;color:#fff;background:0;border:0;cursor:pointer}
+.empty{color:var(--muted);text-align:center;padding:80px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <span class="meta" id="meta"></span>
+  <span class="privacy">仅含缩略图 · 不含原图与文字信息</span>
+</header>
+<main id="app"></main>
+<div class="lb" id="lb">
+  <button class="x" id="lbx" aria-label="关闭">&times;</button>
+  <button class="nav prev" id="lbprev" aria-label="上一张">&#8249;</button>
+  <img id="lbimg" alt="">
+  <button class="nav next" id="lbnext" aria-label="下一张">&#8250;</button>
+  <div class="cap" id="lbcap"></div>
+</div>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+document.title = D.title;
+document.getElementById("title").textContent = D.title;
+document.getElementById("meta").textContent =
+  D.items.length + " 张 · 生成于 " + D.made;
+function dayKey(ts){const d=new Date(ts*1000);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+const app = document.getElementById("app");
+if (!D.items.length){ app.innerHTML = '<div class="empty">这个分享包是空的。</div>'; }
+const groups = [];
+for (const it of D.items){
+  const k = dayKey(it.ts);
+  let g = groups[groups.length-1];
+  if (!g || g.key !== k){ g = {key:k, items:[]}; groups.push(g); }
+  g.items.push(it);
+}
+for (const g of groups){
+  const sec = document.createElement("section"); sec.className="day";
+  const h = document.createElement("h2"); h.textContent = g.key; sec.append(h);
+  const grid = document.createElement("div"); grid.className="grid";
+  for (const it of g.items){
+    const fig = document.createElement("figure");
+    const img = document.createElement("img"); img.loading="lazy"; img.src=it.src; img.alt="";
+    const tag = document.createElement("span"); tag.className="tag"; tag.textContent=it.kind;
+    fig.append(img, tag);
+    fig.addEventListener("click", () => openLb(it));
+    grid.append(fig);
+  }
+  sec.append(grid); app.append(sec);
+}
+const lb=document.getElementById("lb"), lbimg=document.getElementById("lbimg"),
+      lbcap=document.getElementById("lbcap");
+let cur = 0;
+function fmt(ts){return new Date(ts*1000).toLocaleString("zh-CN",
+  {year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function openLb(it){cur=D.items.indexOf(it);renderLb();lb.classList.add("on");}
+function renderLb(){const it=D.items[cur];if(!it)return;
+  lbimg.src=it.src; lbcap.textContent=fmt(it.ts)+" · "+it.kind+" · "+(cur+1)+"/"+D.items.length;}
+function step(n){cur=(cur+n+D.items.length)%D.items.length;renderLb();}
+document.getElementById("lbx").onclick=()=>lb.classList.remove("on");
+document.getElementById("lbprev").onclick=()=>step(-1);
+document.getElementById("lbnext").onclick=()=>step(1);
+lb.addEventListener("click",e=>{if(e.target===lb)lb.classList.remove("on");});
+document.addEventListener("keydown",e=>{if(!lb.classList.contains("on"))return;
+  if(e.key==="Escape")lb.classList.remove("on");
+  else if(e.key==="ArrowLeft")step(-1); else if(e.key==="ArrowRight")step(1);});
+</script>
+</body>
+</html>
